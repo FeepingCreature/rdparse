@@ -25,6 +25,8 @@ bool parse_float(char **textp, float *outp);
 
 ParseResult parse_string(char **textp, char **outp);
 
+void add_reserved_identifier(char *ident);
+
 void log_parser_error(char *location, char *format, ...);
 
 #endif

@@ -84,16 +84,32 @@ char *parse_identifier_all(char **textp) {
   return res;
 }
 
+struct ReservedIdentifierList {
+  struct ReservedIdentifierList *prev;
+  char *ident;
+};
+static __thread struct ReservedIdentifierList *reserved_identifiers = NULL;
+
+void add_reserved_identifier(char *ident) {
+  struct ReservedIdentifierList *prev = reserved_identifiers;
+  reserved_identifiers = malloc(sizeof(struct ReservedIdentifierList));
+  reserved_identifiers->prev = prev;
+  reserved_identifiers->ident = ident;
+}
+
 char *parse_identifier(char **textp) {
   char *text = *textp;
   char *res = parse_identifier_all(&text);
   if (res == NULL) return res;
   
-  // TODO extend
-  if (strcmp(res, "new") == 0) {
-    // reserved identifier
-    free(res);
-    return NULL;
+  // check for reserved identifiers
+  struct ReservedIdentifierList *reserved = reserved_identifiers;
+  while (reserved) {
+    if (strcmp(res, reserved->ident) == 0) {
+      free(res);
+      return NULL;
+    }
+    reserved = reserved->prev;
   }
   
   *textp = text;
