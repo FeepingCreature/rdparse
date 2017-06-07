@@ -11,6 +11,18 @@
 #include <assert.h>
 #include <unistd.h>
 
+bool starts_with(char **textp, char *cmp) {
+  char *text = *textp;
+  while (*cmp) {
+    if (!text[0]) return false;
+    if (text[0] != cmp[0]) return false;
+    text++;
+    cmp++;
+  }
+  *textp = text;
+  return true;
+}
+
 TextRange readfile(char *filename) {
   int file = open(filename, O_RDONLY);
   if (file == -1) { fprintf(stderr, "cannot open file '%s': %s\n", filename, strerror(errno)); abort(); }

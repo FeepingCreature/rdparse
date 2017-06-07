@@ -11,19 +11,12 @@
 #include <unicode/utf8.h>
 #include <unicode/uchar.h>
 
-static bool starts_with(char **textp, char *cmp) {
-  char *text = *textp;
-  while (*cmp) {
-    if (!text[0]) return false;
-    if (text[0] != cmp[0]) return false;
-    text++;
-    cmp++;
-  }
-  *textp = text;
-  return true;
-}
+static bool(*user_clean_fn)(char**) = NULL;
 
 void eat_filler(char **textp) {
+  if (user_clean_fn) {
+    if (user_clean_fn(textp)) return;
+  }
   int comment_depth = 0;
   while (**textp) {
     if (comment_depth) {
@@ -38,6 +31,10 @@ void eat_filler(char **textp) {
       else break;
     }
   }
+}
+
+void set_user_clean_fn(bool (*fn)(char**)) {
+  user_clean_fn = fn;
 }
 
 bool eat_string(char **textp, char *keyword) {
@@ -119,13 +116,13 @@ char *parse_identifier(char **textp) {
 bool parse_int(char **textp, int *outp) {
   char *text = *textp;
   eat_filler(&text);
-  char *start = text;
   int base = 10;
   if (text[0] && text[0] == '-') text++;
   if (text[0] == '0' && text[1] == 'x') {
     base = 16;
     text += 2;
   }
+  char *start = text;
   while (text[0]) {
     if (base >= 10 && text[0] >= '0' && text[0] <= '9') text++;
     else if (base >= 16 && ((text[0] >= 'A' && text[0] <= 'F') || (text[0] >= 'a' && text[0] <= 'f'))) text++;
@@ -224,16 +221,20 @@ bool eat_keyword(char **textp, char *keyword) {
 }
 
 void log_parser_error(char *location, char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  vlog_parser_error(location, format, ap);
+  va_end(ap);
+}
+
+void vlog_parser_error(char *location, char *format, va_list ap) {
   TextRange line;
   const char *file, *fn;
   int row, col;
   if (find_text_pos(location, &file, &fn, &line, &row, &col)) {
     fprintf(stderr, "\x1b[1m%s:%i:%i: \x1b[31merror:\x1b[0m ", file, row + 1, col + 1);
     
-    va_list ap;
-    va_start(ap, format);
     vfprintf(stderr, format, ap);
-    va_end(ap);
     
     fprintf(stderr, "\n");
     if (*(line.end - 1) == '\n') line.end --;
@@ -248,10 +249,7 @@ void log_parser_error(char *location, char *format, ...) {
   } else {
     fprintf(stderr, "parser error:\n");
     fprintf(stderr, "at %.*s:\n", 20, location);
-    va_list ap;
-    va_start(ap, format);
     vfprintf(stderr, format, ap);
-    va_end(ap);
     fprintf(stderr, "\n");
   }
 }

@@ -2,6 +2,7 @@
 #define RDPARSE_PARSER_H
 
 #include <stdbool.h>
+#include <stdarg.h>
 
 typedef enum {
   PARSE_NONE,
@@ -28,5 +29,8 @@ ParseResult parse_string(char **textp, char **outp);
 void add_reserved_identifier(char *ident);
 
 void log_parser_error(char *location, char *format, ...);
+void vlog_parser_error(char *location, char *format, va_list ap);
+
+void set_user_clean_fn(bool (*)(char**));
 
 #endif

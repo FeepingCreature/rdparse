@@ -22,6 +22,8 @@ void register_file(TextRange text, const char *name, int row_start, int col_star
 
 void register_function(TextRange text, const char *name);
 
+bool starts_with(char **textp, char *cmp);
+
 size_t utf8_strnlen(const char *ptr, size_t length);
 
 size_t utf8_strlen(const char *ptr);
